@@ -1,70 +1,56 @@
 import allure
 import pytest
 from selenium import webdriver
-from login_page import LoginPage
-from main_page import MainPage
-from cart_page import CartPage
-from checkout_page import CheckoutPage
+from calculator_page import CalculatorPage
 
 
 @pytest.fixture
+@allure.epic("Калькулятор")
+@allure.title("Тестирование калькулятора")
+@allure.severity("critical")
 def browser():
     """
-    Фикстура PyTest, открывающая и закрывающая браузер Chrome для выполнения тестов.
+    Фикстура Pytest, создающая экземпляр браузера и предоставляющая его тестовым сценариям.
+
+    Перед началом теста запускается новый экземпляр браузера Chrome, а после завершения теста закрывается окно браузера.
 
     :yield: Объект браузера (Selenium WebDriver).
     """
-    with allure.step("Открытие браузера"):
+    with allure.step("Инициализация браузера"):
         driver = webdriver.Chrome()
         yield driver
     with allure.step("Закрытие браузера"):
         driver.quit()
 
 
-@allure.epic("Магазин")
-@allure.title("Тестирование магазина")
-@allure.severity("blocker")  # Критический уровень важности
-@allure.feature("Тестирование процесса покупки")
-@allure.story("Полный поток покупки товаров")
-def test_shopping_flow(browser):
+@allure.feature("Проверка процессов и возможностей калькулятора")
+@allure.story("Тест калькулятора с задержкой 45 сек")
+def test_calculator_with_delay(browser):
     """
-    Полностью автоматизированный тест полного цикла покупки товаров в магазине.
+    Тестовый сценарий проверки работы онлайн-калькулятора с установленной временной задержкой.
 
-    Шаги теста:
-    1. Авторизация пользователя.
-    2. Добавление выбранных товаров в корзину.
-    3. Оформление заказа и заполнение контактных данных.
-    4. Подтверждение итоговой суммы заказа.
+    Последовательность действий:
+    1. Открывается страница калькулятора.
+    2. Устанавливается временная задержка перед выполнением вычислений (45 секунд).
+    3. Производится последовательность арифметических операций (7+8).
+    4. Проверяется правильность результата спустя установленное время ожидания (50 секунд).
 
-    :param browser: Объект браузера, созданный фикстурой.
+    :param browser: Экземпляр браузера, предоставляемый фикстурой.
     """
-    # Инициализация объектов страниц
-    login_page = LoginPage(browser)
-    main_page = MainPage(browser)
-    cart_page = CartPage(browser)
-    checkout_page = CheckoutPage(browser)
+    calculator = CalculatorPage(browser)
 
-    with allure.step("1. Открываем сайт и авторизуемся"):
-        login_page.open()
-        login_page.login("standard_user", "secret_sauce")
+    with allure.step("1. Открываем страницу калькулятора"):
+        calculator.open()
 
-    with allure.step("2. Добавляем товары в корзину"):
-        items_to_add = [
-            "Sauce Labs Backpack",
-            "Sauce Labs Bolt T-Shirt",
-            "Sauce Labs Onesie"
-        ]
+    with allure.step("2. Устанавливаем задержку 45 секунд"):
+        calculator.set_delay(45)
 
-        for item in items_to_add:
-            main_page.add_to_cart(item)
+    with allure.step("3. Нажимаем кнопки 7 + 8 ="):
+        calculator.click_button('7')
+        calculator.click_button('+')
+        calculator.click_button('8')
+        calculator.click_button('=')
 
-    with allure.step("3. Переходим в корзину и начинаем оформление"):
-        main_page.go_to_cart()
-        cart_page.checkout()
-
-    with allure.step("4. Заполняем данные и получаем итоговую сумму"):
-        checkout_page.fill_info("Иван", "Петров", "123456")
-        total = checkout_page.get_total()
-
-    with allure.step("5. Проверяем итоговую сумму"):
-        assert total == "Total: $58.29", f"Ожидалась сумма $58.29, получено {total}"
+    with allure.step("4. Получаем и проверяем результат, спустя 50 секунд"):
+        result = calculator.get_result(50)  # Даем больше времени (50 секунд)
+        assert result == "15", f"Ожидался результат 15, получено {result}"
